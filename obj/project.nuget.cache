@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "W3hwEYaJgmPXktvr76+vqsAcjTeG0K/00cMvhVh+jtozrjzuYRLYplvWbWZxnY3F0Sq7f+ulmyP/5EnmWZI5Yw==",
+  "success": true,
+  "projectFilePath": "D:\\cshapdemo\\ConsoleApp1\\ConsoleApp1.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mowo\\.nuget\\packages\\ffmpeg.autogen\\4.3.1\\ffmpeg.autogen.4.3.1.nupkg.sha512"
+  ],
+  "logs": []
+}

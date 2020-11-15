@@ -1,0 +1,15 @@
+D:\cshapdemo\ConsoleApp1\bin\Debug\netcoreapp3.1\ConsoleApp1.exe
+D:\cshapdemo\ConsoleApp1\bin\Debug\netcoreapp3.1\ConsoleApp1.deps.json
+D:\cshapdemo\ConsoleApp1\bin\Debug\netcoreapp3.1\ConsoleApp1.runtimeconfig.json
+D:\cshapdemo\ConsoleApp1\bin\Debug\netcoreapp3.1\ConsoleApp1.runtimeconfig.dev.json
+D:\cshapdemo\ConsoleApp1\bin\Debug\netcoreapp3.1\ConsoleApp1.dll
+D:\cshapdemo\ConsoleApp1\bin\Debug\netcoreapp3.1\ConsoleApp1.pdb
+D:\cshapdemo\ConsoleApp1\obj\Debug\netcoreapp3.1\ConsoleApp1.AssemblyInfoInputs.cache
+D:\cshapdemo\ConsoleApp1\obj\Debug\netcoreapp3.1\ConsoleApp1.AssemblyInfo.cs
+D:\cshapdemo\ConsoleApp1\obj\Debug\netcoreapp3.1\ConsoleApp1.csproj.CoreCompileInputs.cache
+D:\cshapdemo\ConsoleApp1\obj\Debug\netcoreapp3.1\ConsoleApp1.dll
+D:\cshapdemo\ConsoleApp1\obj\Debug\netcoreapp3.1\ConsoleApp1.pdb
+D:\cshapdemo\ConsoleApp1\obj\Debug\netcoreapp3.1\ConsoleApp1.genruntimeconfig.cache
+D:\cshapdemo\ConsoleApp1\bin\Debug\netcoreapp3.1\FFmpeg.AutoGen.dll
+D:\cshapdemo\ConsoleApp1\obj\Debug\netcoreapp3.1\ConsoleApp1.csproj.CopyComplete
+D:\cshapdemo\ConsoleApp1\obj\Debug\netcoreapp3.1\ConsoleApp1.csprojAssemblyReference.cache
