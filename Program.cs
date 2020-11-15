@@ -77,7 +77,7 @@ namespace ConsoleApp1
                 int fifo_mic_size = ffmpeg.av_audio_fifo_size(aVAudioFifo2);
                 int frame_spk_min_size = openfile1._pFormatContext->streams[openfile1._streamIndex]->codecpar->frame_size;
                 int frame_mic_min_size = openfile2._pFormatContext->streams[openfile2._streamIndex]->codecpar->frame_size;
-
+                Console.WriteLine("fifo_spk_size:==" + fifo_spk_size);
                 if (fifo_spk_size >= frame_spk_min_size && fifo_mic_size >= frame_mic_min_size)
                 {
 
@@ -87,7 +87,8 @@ namespace ConsoleApp1
                     pFrame_spk->channel_layout = openfile1._pFormatContext->streams[openfile1._streamIndex]->codecpar->channel_layout;
                     pFrame_spk->format = (int)openfile1._pFormatContext->streams[openfile1._streamIndex]->codec->sample_fmt;
                     pFrame_spk->sample_rate = openfile1._pFormatContext->streams[openfile1._streamIndex]->codecpar->sample_rate;
-                    int ret = ffmpeg.av_frame_get_buffer(pFrame_spk, 0);
+                   // pFrame_spk->format = 8;
+                   int ret = ffmpeg.av_frame_get_buffer(pFrame_spk, 0);
                     if (ret < 0)
                     {
                         Console.WriteLine("av_frame_get_buffer pFrame_spk failed");
@@ -95,7 +96,8 @@ namespace ConsoleApp1
                     pFrame_mic->nb_samples = frame_mic_min_size;
                     pFrame_mic->channel_layout = openfile2._pFormatContext->streams[openfile2._streamIndex]->codecpar->channel_layout;
                     pFrame_mic->format = (int)openfile2._pFormatContext->streams[openfile2._streamIndex]->codec->sample_fmt;
-                    pFrame_mic->sample_rate = openfile2._pFormatContext->streams[openfile2._streamIndex]->codecpar->sample_rate;
+                    //pFrame_mic->format = 4;
+                      pFrame_mic->sample_rate = openfile2._pFormatContext->streams[openfile2._streamIndex]->codecpar->sample_rate;
                     ret = ffmpeg.av_frame_get_buffer(pFrame_mic, 0);
                     if (ret < 0)
                     {
@@ -112,18 +114,21 @@ namespace ConsoleApp1
                     int nSizeOfPerson2 = Marshal.SizeOf(pFrame_mic->data);                 //定义指针长度
                     IntPtr spkX2 = Marshal.AllocHGlobal(nSizeOfPerson2);        //定义指针
                     Marshal.StructureToPtr(pFrame_mic->data, spkX2, true);                //将结构体person转为personX指针
-                    ret = ffmpeg.av_audio_fifo_read(aVAudioFifo2, (void**)spkX2, frame_mic_min_size);//读取数据1
+                    ret = ffmpeg.av_audio_fifo_read(aVAudioFifo2, (void**)spkX2, frame_mic_min_size);//读取数据2
 
                     //  Thread thread1 = new Thread(start:new ThreadStart(new My2(pFrame_mic, aVAudioFifo2).C));
 
 
 
 
-                    pFrame_spk->pts = ffmpeg.av_frame_get_best_effort_timestamp(pFrame_spk);
-                    pFrame_mic->pts = ffmpeg.av_frame_get_best_effort_timestamp(pFrame_mic);
+                  //  pFrame_spk->pts = ffmpeg.av_frame_get_best_effort_timestamp(pFrame_spk);
+                   // pFrame_mic->pts = ffmpeg.av_frame_get_best_effort_timestamp(pFrame_mic);
 
                     _filter_ctx_src_spk =myFilter._filter_ctx_src_spk;
-                     ret = ffmpeg.av_buffersrc_add_frame(_filter_ctx_src_spk, pFrame_spk);//交给filter
+                    _filter_ctx_src_mic = myFilter._filter_ctx_src_mic;
+                    _filter_ctx_sink = myFilter._filter_ctx_sink;
+
+                    ret = ffmpeg.av_buffersrc_add_frame(_filter_ctx_src_spk, pFrame_spk);//交给filter
                     if (ret < 0)
                     {
                         Console.WriteLine("Mixer: failed to call av_buffersrc_add_frame (speaker)\n");
@@ -148,8 +153,12 @@ namespace ConsoleApp1
                         AVFrame* pFrame_out = ffmpeg.av_frame_alloc();
                         ret = ffmpeg.av_buffersink_get_frame_flags(_filter_ctx_sink, pFrame_out, 0);
                         if (ret < 0)
-                        {
-                            Console.WriteLine("Mixer: failed to call av_buffersink_get_frame_flags\n");
+                        {                     
+                            var bufferSize = 1024;
+                            var buffer = stackalloc byte[bufferSize];
+                            ffmpeg.av_strerror(ret, buffer, (ulong)bufferSize);
+                            var message = Marshal.PtrToStringAnsi((IntPtr)buffer);
+                            Console.WriteLine("Mixer: failed to call av_buffersink_get_frame_flags\n"+ message);
                             break;
                         }
                         if (pFrame_out->data[0] != null)
@@ -158,29 +167,44 @@ namespace ConsoleApp1
                             packet_out.data = null;
                             packet_out.size = 0;
 
-                            ret = ffmpeg.avcodec_encode_audio2(outfile._pFormatContext->streams[outfile._streamIndex]->codec, &packet_out, pFrame_out, &got_packet_ptr);
+                            //ret=ffmpeg.avcodec_send_frame(outfile._pCodecContext, pFrame_out);
+                            //if (ret < 0)
+                            //{
+                            //    Console.WriteLine("Mixer: failed to call avcodec_send_frame pFrame_out \n");
+                            //    break;
+                            //}
+
+                            //ret=ffmpeg.avcodec_receive_packet(outfile._pCodecContext, &packet_out);
+                            //if (ret < 0)
+                            //{
+                            //    Console.WriteLine("Mixer: failed to call avcodec_send_frame packet_out \n");
+                            //    break;
+                            //}
+
+
+                            ret = ffmpeg.avcodec_encode_audio2(outfile._pCodecContext, &packet_out, pFrame_out, &got_packet_ptr);
                             if (ret < 0)
                             {
                                 Console.WriteLine("Mixer: failed to call avcodec_decode_audio4\n");
                                 break;
                             }
-                            if (got_packet_ptr > 0)
+                            if (got_packet_ptr >0)
                             {
                                 packet_out.stream_index = outfile._streamIndex;
-                                packet_out.pts = frame_count * outfile._pFormatContext->streams[outfile._streamIndex]->codec->frame_size;
+                                packet_out.pts = frame_count * outfile._pCodecContext->frame_size;
                                 packet_out.dts = packet_out.pts;
-                                packet_out.duration = outfile._pFormatContext->streams[outfile._streamIndex]->codec->frame_size;
+                                packet_out.duration = outfile._pCodecContext->frame_size;
 
                                 packet_out.pts = ffmpeg.av_rescale_q_rnd(packet_out.pts,
-                                    outfile._pFormatContext->streams[outfile._streamIndex]->codec->time_base,
-                                    outfile._pFormatContext->streams[outfile._streamIndex]->time_base,
+                                    outfile._pCodecContext->time_base,
+                                    outfile._pCodecContext->time_base,
                                     (AVRounding)(1 | 8192));
 
                                 packet_out.dts = packet_out.pts;
 
                                 packet_out.duration = ffmpeg.av_rescale_q_rnd(packet_out.duration,
-                                     outfile._pFormatContext->streams[outfile._streamIndex]->codec->time_base,
-                                     outfile._pFormatContext->streams[outfile._streamIndex]->time_base,
+                                     outfile._pCodecContext->time_base,
+                                     outfile._pCodecContext->time_base,
                                     (AVRounding)(1 | 8192));
 
                                 frame_count++;
@@ -192,14 +216,16 @@ namespace ConsoleApp1
                                 }
                                 Console.WriteLine("Mixer: write frame to file\n");
                             }
-                            ffmpeg.av_free_packet(&packet_out);
+                            ffmpeg.av_packet_unref(&packet_out);
                         }
                         ffmpeg.av_frame_free(&pFrame_out);
+                        Thread.Sleep(1000);
                     }
+                    Console.WriteLine("tmpFifoFailed:"+ tmpFifoFailed);
                 }
                 else
                 {
-
+                       Console.WriteLine("else tmpFifoFailed:"+ tmpFifoFailed);
                     //===========================================================================
                     tmpFifoFailed++;
 
@@ -266,7 +292,7 @@ namespace ConsoleApp1
                 AVFilterInOut* filter_input = ffmpeg.avfilter_inout_alloc();
 
                 _filter_graph = ffmpeg.avfilter_graph_alloc();
-                string args_spk = "time_base=1/44100:sample_rate=44100:sample_fmt=7:channel_layout=3";
+                string args_spk = "time_base=1/44100:sample_rate=44100:sample_fmt=8:channel_layout=3";
 
 
                 // 5.1 创建输出滤镜的上下文
@@ -286,7 +312,7 @@ namespace ConsoleApp1
                 //    Console.WriteLine("Filter: failed to call av_opt_set_bin -- sample_rates\n");
                 //}
 
-                ret = ffmpeg.av_opt_set_bin(_filter_ctx_sink, "sample_fmts", (byte*)&encodec_ctx->sample_fmt, (int)4, 1);
+                ret = ffmpeg.av_opt_set_bin(_filter_ctx_sink, "sample_fmts", (byte*)&encodec_ctx->sample_fmt, (int)8, 1);
                 if (ret < 0)
                 {
                     Console.WriteLine("Filter: failed to call av_opt_set_bin -- sample_fmts\n");
@@ -298,7 +324,11 @@ namespace ConsoleApp1
                     Console.WriteLine("Filter: failed to call av_opt_set_bin -- channel_layouts\n");
                 }
 
-
+                ret = ffmpeg.av_opt_set_bin(_filter_ctx_src_spk, "sample_fmts", (byte*)&encodec_ctx->sample_fmt, (int)8, 1);
+                if (ret < 0)
+                {
+                    Console.WriteLine("Filter: failed to call _filter_ctx_src_spk -- sample_fmts\n");
+                }
 
 
 
@@ -338,6 +368,8 @@ namespace ConsoleApp1
                 }
 
                 this._filter_ctx_src_spk = _filter_ctx_src_spk;
+                this._filter_ctx_src_mic = _filter_ctx_src_mic;
+                this._filter_ctx_sink = _filter_ctx_sink;
             }
 
 
@@ -470,7 +502,7 @@ namespace ConsoleApp1
             while (true)
             {
 
-                Console.WriteLine("count" + count);
+               
                 packet.data = null;
                 packet.size = 0;
 
@@ -483,7 +515,7 @@ namespace ConsoleApp1
                 }
                 //if (packet.stream_index == openFlie._streamIndex)
                 //{
-                Console.WriteLine(packet.size);
+               //---- Console.WriteLine(packet.size);
                 int ret = ffmpeg.avcodec_send_packet(openFlie._pCodecContext, &packet);//发送解码数据
 
                 if (ret < 0)
